@@ -2,9 +2,9 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Mtf.Wmi</id>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <description>
-      Windows Management Instructions Query Helper Library.
+      Windows Management Instrumentation Query Helper Library.
       
       Compatibility:
       - .NET Framework 4.8.1
@@ -16,13 +16,19 @@
     <copyright>Copyright © 2024</copyright>
 	<license type="expression">MIT</license>
 	<projectUrl>https://github.com/Mortens4444/Mtf.Wmi</projectUrl>
-    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="03a9ecfb608bf0b41018377b906f10988ef9edbc" />
-	<tags>Windows Management Instructions WMI</tags>
+    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="922b416fc5c5469dff6338ad694965aa8cab204b" />
+	<tags>Windows Management Instrumentation WMI</tags>
 	<readme>docs\ReadMe.md</readme>
     <dependencies>
-      <group targetFramework="net481" />
-      <group targetFramework="net8.0-windows7" />
-      <group targetFramework="net9.0-windows7" />
+	  <group targetFramework="net481">
+		<dependency id="System.Management" version="4.7.0" />
+	  </group>
+	  <group targetFramework="net8.0-windows7">
+		<dependency id="System.Management" version="7.0.0" />
+	  </group>
+	  <group targetFramework="net9.0-windows7">
+		<dependency id="System.Management" version="7.0.0" />
+	  </group>
     </dependencies>
   </metadata>
   <files>
