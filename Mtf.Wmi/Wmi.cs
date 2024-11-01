@@ -1,12 +1,12 @@
-﻿using Mtf.Wmi.Models;
-using Mtf.Wmi.Services;
+﻿using Mtf.WmiHelper.Models;
+using Mtf.WmiHelper.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 using System.Security;
 
-namespace Mtf.Wmi
+namespace Mtf.WmiHelper
 {
     public static class Wmi
     {
@@ -36,7 +36,7 @@ namespace Mtf.Wmi
             ImpersonationLevel impersonationLevel, AuthenticationLevel authenticationLevel, bool enablePrivileges = false,
             string username = null, SecureString securePassword = null, string password = null, string authority = null, ManagementNamedValueCollection context = null)
         {
-            var managementScope = $"\\\\{(computerName ?? "localhost")}\\root\\{@namespace}";
+            var managementScope = $"\\\\{computerName ?? "localhost"}\\root\\{@namespace}";
             var scope = new ManagementScope(managementScope);
 
             if (!LocalDeviceIdentifier.IsLocalMachine(computerName))
@@ -63,7 +63,7 @@ namespace Mtf.Wmi
                 var shares = objectSearcher.Get().Cast<ManagementObject>();
                 if (columnNames == Constants.Star && shares.Any())
                 {
-                    columnNames = String.Join(",", shares.First().Properties.Cast<PropertyData>().Select(p => p.Name));
+                    columnNames = string.Join(",", shares.First().Properties.Cast<PropertyData>().Select(p => p.Name));
                 }
 
                 foreach (var share in shares)
@@ -77,7 +77,7 @@ namespace Mtf.Wmi
 
         public static string GetCommaSeparatedColumnNames(string query)
         {
-            if (String.IsNullOrWhiteSpace(query) || !query.StartsWith("SELECT ", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(query) || !query.StartsWith("SELECT ", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException($"Not supported query: {query}", nameof(query));
             }
@@ -93,7 +93,7 @@ namespace Mtf.Wmi
                 .Split(separator, StringSplitOptions.RemoveEmptyEntries)
                 .Select(name => name.Trim());
 
-            return String.Join(",", columnNames);
+            return string.Join(",", columnNames);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Mtf.Wmi
+﻿namespace Mtf.WmiHelper
 {
     public static class Constants
     {

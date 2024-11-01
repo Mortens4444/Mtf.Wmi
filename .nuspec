@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Mtf.Wmi</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <description>
       Windows Management Instructions Query Helper Library.
       
@@ -16,7 +16,7 @@
     <copyright>Copyright © 2024</copyright>
 	<license type="expression">MIT</license>
 	<projectUrl>https://github.com/Mortens4444/Mtf.Wmi</projectUrl>
-    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="00000000000000000000000000000000000000" />
+    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="03a9ecfb608bf0b41018377b906f10988ef9edbc" />
 	<tags>Windows Management Instructions WMI</tags>
 	<readme>docs\ReadMe.md</readme>
     <dependencies>

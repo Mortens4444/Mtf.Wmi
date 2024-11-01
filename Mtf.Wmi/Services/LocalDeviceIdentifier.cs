@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net;
 
-namespace Mtf.Wmi.Services
+namespace Mtf.WmiHelper.Services
 {
     public static class LocalDeviceIdentifier
     {

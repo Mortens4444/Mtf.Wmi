@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Mtf.Wmi.Models
+namespace Mtf.WmiHelper.Models
 {
     public class WmiReaderResult : IEnumerable<IEnumerable<object>>
     {

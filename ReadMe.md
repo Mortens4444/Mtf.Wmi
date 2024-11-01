@@ -16,10 +16,10 @@ To install the `Mtf.Wmi` package, follow these steps:
    ```
 
 2. **Include the Namespace**:
-   Add the `Mtf.Wmi` namespace at the beginning of your code file:
+   Add the `Mtf.WmiHelper` namespace at the beginning of your code file:
 
    ```csharp
-   using Mtf.Wmi;
+   using Mtf.WmiHelper;
    ```
 
 ## Class: Wmi
@@ -68,7 +68,7 @@ Extracts column names from a WMI `SELECT` query string.
 ### Example Usage
 
 ```csharp
-using Mtf.Wmi;
+using Mtf.WmiHelper;
 using System.Security;
 using System.Management;
 
