@@ -12,9 +12,9 @@ namespace Mtf.WmiHelper
     {
         private static readonly char[] separator = new[] { ',' };
 
-        public static WmiReaderResult WmiGetObjects(string queryString, string nameSpace)
+        public static WmiReaderResult GetObjects(string queryString, string nameSpace)
         {
-            return WmiGetObjects(queryString, nameSpace, null, ImpersonationLevel.Impersonate, AuthenticationLevel.Default);
+            return GetObjects(queryString, nameSpace, null, ImpersonationLevel.Impersonate, AuthenticationLevel.Default);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Mtf.WmiHelper
         /// <param name="authority">Example: Authority</param>
         /// <param name="context">Example: var context = new ManagementNamedValueCollection(); context.Add("Key1", "Value1"); context.Add("Key2", "Value2");</param>
         /// <returns>Result of the query</returns>
-        public static WmiReaderResult WmiGetObjects(string queryString, string @namespace, string computerName,
+        public static WmiReaderResult GetObjects(string queryString, string @namespace, string computerName,
             ImpersonationLevel impersonationLevel, AuthenticationLevel authenticationLevel, bool enablePrivileges = false,
             string username = null, SecureString securePassword = null, string password = null, string authority = null, ManagementNamedValueCollection context = null)
         {
