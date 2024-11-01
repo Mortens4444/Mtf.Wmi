@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Mtf.Wmi</id>
-    <version>1.0.2</version>
+    <version>1.0.4</version>
     <description>
       Windows Management Instrumentation Query Helper Library.
       
@@ -16,7 +16,7 @@
     <copyright>Copyright © 2024</copyright>
 	<license type="expression">MIT</license>
 	<projectUrl>https://github.com/Mortens4444/Mtf.Wmi</projectUrl>
-    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="29c1455ea493939f76b95cd3ef1dcf72cab5a545" />
+    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="d5639ac772f024232524590335edf6a7419dba7e" />
 	<tags>Windows Management Instrumentation WMI</tags>
 	<readme>docs\ReadMe.md</readme>
     <dependencies>
@@ -27,7 +27,7 @@
 		<dependency id="System.Management" version="8.0.0" />
 	  </group>
 	  <group targetFramework="net9.0-windows7">
-		<dependency id="System.Management" version="9.0.0" />
+		<dependency id="System.Management" version="8.0.0" />
 	  </group>
     </dependencies>
   </metadata>
