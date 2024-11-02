@@ -14,7 +14,7 @@
     <copyright>Copyright © 2024</copyright>
 	<license type="expression">MIT</license>
 	<projectUrl>https://github.com/Mortens4444/Mtf.Wmi</projectUrl>
-    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="d5639ac772f024232524590335edf6a7419dba7e" />
+    <repository type="git" url="https://github.com/Mortens4444/Mtf.Wmi.git" branch="main" commit="e21a5dd4ae468d0b5225022b05d05662f2a2e3f8" />
 	<tags>Windows Management Instrumentation WMI</tags>
 	<readme>docs\ReadMe.md</readme>
     <dependencies>
