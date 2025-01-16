@@ -8,11 +8,10 @@ namespace Mtf.WmiHelper.Models
     public class WmiReaderResult : IEnumerable<IEnumerable<object>>
     {
         private readonly List<IEnumerable<object>> rows = new List<IEnumerable<object>>();
-        private readonly Dictionary<string, int> columnIndexes;
 
         public WmiReaderResult(string commaSeparatedColumnNames = null, IEnumerable<IEnumerable<object>> initialRows = null)
         {
-            columnIndexes = commaSeparatedColumnNames?
+            ColumnIndexes = commaSeparatedColumnNames?
                 .Split(',')
                 .Select((name, index) => new { name, index })
                 .ToDictionary(x => x.name.Trim(), x => x.index, StringComparer.OrdinalIgnoreCase)
@@ -27,13 +26,15 @@ namespace Mtf.WmiHelper.Models
             }
         }
 
+        public Dictionary<string, int> ColumnIndexes { get; private set; }
+
         public int RowCount => rows.Count;
 
         public IEnumerable<object> this[int rowIndex] => rows.ElementAt(rowIndex);
 
         public object this[int rowIndex, int columnIndex] => rows.ElementAt(rowIndex).ElementAt(columnIndex);
 
-        public object this[int rowIndex, string columnName] => columnIndexes.TryGetValue(columnName, out var columnIndex)
+        public object this[int rowIndex, string columnName] => ColumnIndexes.TryGetValue(columnName, out var columnIndex)
             ? rows.ElementAt(rowIndex).ElementAt(columnIndex) : throw new InvalidOperationException($"Column '{columnName}' not found.");
 
         public void AddRow(IEnumerable<object> row) => rows.Add(row);
