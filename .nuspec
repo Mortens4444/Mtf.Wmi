@@ -2,12 +2,13 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Mtf.Wmi</id>
-    <version>1.0.12</version>
+    <version>1.0.14</version>
     <description>
       Windows Management Instrumentation Query Helper Library.
       
       Compatibility:
       - .NET Framework 4.5.2
+      - .NET Framework 4.6.2
       - .NET Standard 2.0
 	</description>
     <authors>Mortens</authors>
@@ -23,6 +24,9 @@
 	  <group targetFramework="net452">
 		<dependency id="System.Management" version="5.0.0" />
 	  </group>
+	  <group targetFramework="net462">
+		<dependency id="System.Management" version="9.0.3" />
+	  </group>
       <group targetFramework="netstandard2.0">
 		<dependency id="System.Management" version="9.0.3" />
 	  </group>
@@ -30,6 +34,7 @@
   </metadata>
   <files>
     <file src=".\Mtf.Wmi\bin\Release\net452\**" target="lib\net452" />
+    <file src=".\Mtf.Wmi\bin\Release\net462\**" target="lib\net462" />
     <file src=".\Mtf.Wmi\bin\Release\netstandard2.0\**" target="lib\netstandard2.0" />
 	<file src=".\ReadMe.md" target="docs\" />
   </files>
