@@ -1,7 +1,9 @@
-﻿using Mtf.WmiHelper.Models;
+﻿using Mtf.Extensions;
+using Mtf.WmiHelper.Models;
 using Mtf.WmiHelper.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Management;
 using System.Security;
@@ -10,18 +12,102 @@ namespace Mtf.WmiHelper
 {
     public static class Wmi
     {
+        private const string DefaultNamespace = "CIMv2";
+        private const string Localhost = "localhost";
+        private const string Ms40e = "MS_40E";
+        private const string Root = "root";
         private static readonly char[] separator = new[] { ',' };
 
-        public static WmiReaderResult GetObjects(string queryString, string nameSpace)
+        public static uint StartApplication(string processPath, string computerName = Localhost, string username = null, string password = null, string authority = "ntlmdomain:DOMAIN", string @namespace = DefaultNamespace)
         {
-            return GetObjects(queryString, nameSpace, null, ImpersonationLevel.Impersonate, AuthenticationLevel.Default);
+            using (var securePassword = password.GetSecureString())
+            {
+                return StartApplication(processPath, computerName, username, securePassword, authority, @namespace);
+            }
+        }
+
+        public static uint StartApplication(string processPath, string computerName = Localhost, string username = null, SecureString securePassword = null, string authority = "ntlmdomain:DOMAIN", string @namespace = DefaultNamespace)
+        {
+            var managementScope = $"\\\\{computerName ?? Localhost}\\{Root}\\{@namespace}";
+            var scope = new ManagementScope(managementScope);
+
+            if (!LocalDeviceIdentifier.IsLocalMachine(computerName))
+            {
+                scope.Options = new ConnectionOptions
+                {
+                    Username = username,
+                    SecurePassword = securePassword,
+                    Authority = authority,
+                    Locale = Ms40e,
+                    Timeout = TimeSpan.MaxValue,
+                    EnablePrivileges = true,
+                    Authentication = AuthenticationLevel.PacketPrivacy,
+                    Impersonation = ImpersonationLevel.Impersonate
+                };
+            }
+            scope.Connect();
+            uint processId;
+            using (var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null))
+            {
+                object[] methodArgs = { processPath, null, null, null };
+                var result = processClass.InvokeMethod("Create", methodArgs);
+                processId = (uint)methodArgs[3];
+            }
+            return processId;
+        }
+
+        public static ReadOnlyCollection<string> GetHotfixIDs(string computerName, string username, string password, string authority = "ntlmdomain:DOMAIN", string @namespace = DefaultNamespace)
+        {
+            using (var securePassword = password.GetSecureString())
+            {
+                return GetHotfixIDs(computerName, username, securePassword, authority);
+            }
+        }
+
+        public static ReadOnlyCollection<string> GetHotfixIDs(string computerName, string username, SecureString securePassword, string authority = "ntlmdomain:DOMAIN", string @namespace = DefaultNamespace)
+        {
+            var result = new List<string>();
+
+            var options = new ConnectionOptions
+            {
+                Username = username,
+                SecurePassword = securePassword,
+                Authority = authority,
+                EnablePrivileges = true,
+                Authentication = AuthenticationLevel.PacketPrivacy,
+                Impersonation = ImpersonationLevel.Impersonate
+            };
+
+            var scopePath = $"\\\\{computerName?.Replace("\\\\", "") ?? Localhost}\\{Root}\\{@namespace}";
+            ManagementScope scope = new ManagementScope(scopePath, options);
+
+            scope.Connect();
+
+            var query = new ObjectQuery("SELECT HotFixID FROM Win32_QuickFixEngineering");
+            using (var searcher = new ManagementObjectSearcher(scope, query))
+            {
+                foreach (var queryObj in searcher.Get().Cast<ManagementObject>())
+                {
+                    if (queryObj["HotFixID"] != null)
+                    {
+                        result.Add(queryObj["HotFixID"].ToString());
+                    }
+                }
+            }
+
+            return new ReadOnlyCollection<string>(result);
+        }
+
+        public static WmiReaderResult GetObjects(string queryString, string @namespace = DefaultNamespace)
+        {
+            return GetObjects(queryString, @namespace, null, ImpersonationLevel.Impersonate, AuthenticationLevel.Default);
         }
 
         /// <summary>
         /// Execute WMI query on a computer.
         /// </summary>
         /// <param name="queryString">"Example: SELECT * FROM Win32_BaseBoard"</param>
-        /// <param name="namespace">Example: cimv2</param>
+        /// <param name="namespace">Example: CIMv2</param>
         /// <param name="computerName">Example: localhost</param>
         /// <param name="impersonationLevel">Example: ImpersonationLevel.Impersonate</param>
         /// <param name="authenticationLevel">Example: AuthenticationLevel.Default</param>
@@ -32,11 +118,11 @@ namespace Mtf.WmiHelper
         /// <param name="authority">Example: Authority</param>
         /// <param name="context">Example: var context = new ManagementNamedValueCollection(); context.Add("Key1", "Value1"); context.Add("Key2", "Value2");</param>
         /// <returns>Result of the query</returns>
-        public static WmiReaderResult GetObjects(string queryString, string @namespace, string computerName,
-            ImpersonationLevel impersonationLevel, AuthenticationLevel authenticationLevel, bool enablePrivileges = false,
+        public static WmiReaderResult GetObjects(string queryString, string @namespace = DefaultNamespace, string computerName = Localhost,
+            ImpersonationLevel impersonationLevel = 0, AuthenticationLevel authenticationLevel = 0, bool enablePrivileges = false,
             string username = null, SecureString securePassword = null, string password = null, string authority = null, ManagementNamedValueCollection context = null)
         {
-            var managementScope = $"\\\\{computerName ?? "localhost"}\\root\\{@namespace}";
+            var managementScope = $"\\\\{computerName ?? Localhost}\\{Root}\\{@namespace}";
             var scope = new ManagementScope(managementScope);
 
             if (!LocalDeviceIdentifier.IsLocalMachine(computerName))
@@ -48,7 +134,7 @@ namespace Mtf.WmiHelper
                     SecurePassword = securePassword,
                     Authority = authority,
                     Context = context,
-                    Locale = "MS_40E",
+                    Locale = Ms40e,
                     Impersonation = impersonationLevel,
                     Authentication = authenticationLevel,
                     EnablePrivileges = enablePrivileges,
@@ -60,10 +146,10 @@ namespace Mtf.WmiHelper
             {
                 var columnNames = GetCommaSeparatedColumnNames(queryString);
                 var results = new List<IEnumerable<object>>();
-                var shares = objectSearcher.Get().Cast<ManagementObject>();
-                if (columnNames == Constants.Star && shares.Any())
+                var shares = objectSearcher.Get().Cast<ManagementObject>().ToList();
+                if (columnNames == Constants.Star && shares.Count != 0)
                 {
-                    columnNames = string.Join(",", shares.First().Properties.Cast<PropertyData>().Select(p => p.Name));
+                    columnNames = String.Join(",", shares.First().Properties.Cast<PropertyData>().Select(p => p.Name));
                 }
 
                 foreach (var share in shares)
@@ -93,7 +179,7 @@ namespace Mtf.WmiHelper
                 .Split(separator, StringSplitOptions.RemoveEmptyEntries)
                 .Select(name => name.Trim());
 
-            return string.Join(",", columnNames);
+            return String.Join(",", columnNames);
         }
     }
 }
