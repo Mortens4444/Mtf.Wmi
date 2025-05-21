@@ -12,35 +12,44 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Mtf.WmiHelper</RootNamespace>
     <WarningLevel>9999</WarningLevel>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>true</IncludeSource>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <EmbedAllSources>true</EmbedAllSources>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 
-  <Target Name="SetFileVersionFromNuspec" BeforeTargets="BeforeBuild">
-    <XmlPeek XmlInputPath="../.nuspec" Query="//*[local-name()='version']/text()">
-      <Output TaskParameter="Result" PropertyName="FileVersion" />
-    </XmlPeek>
-  </Target>
+  <PropertyGroup>
+    <Version>1.0.18</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+  </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net452'">
-    <PackageReference Include="System.Management" Version="9.0.4" />
+  <PropertyGroup>
+    <PackageId>Mtf.Wmi</PackageId>
+    <Authors>Mortens</Authors>
+    <Company>Mortens</Company>
+    <Description>Windows Management Instrumentation Query Helper Library.</Description>
+    <PackageReadmeFile>.\ReadMe.md</PackageReadmeFile>
+    <PackageLicenseFile>.\LICENSE.txt</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/Mortens4444/Mtf.Wmi.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Windows Management Instrumentation WMI Mortens</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\ReadMe.md" Pack="true" PackagePath="" />
+    <None Include="..\LICENSE.txt" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Extensions\**" />
-    <EmbeddedResource Remove="Extensions\**" />
-    <None Remove="Extensions\**" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Mtf.Extensions">
-      <Version>1.0.0</Version>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-    <PackageReference Include="Mtf.Extensions">
-      <Version>1.0.0</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Mtf.Extensions" Version="1.0.5" />
+    <PackageReference Include="System.Management" Version="9.0.5" />
   </ItemGroup>
 
 </Project>
