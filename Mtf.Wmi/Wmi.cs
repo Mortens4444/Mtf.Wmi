@@ -1,9 +1,11 @@
-﻿using Mtf.Extensions;
+﻿using Microsoft.Win32;
+using Mtf.Extensions;
 using Mtf.WmiHelper.Models;
 using Mtf.WmiHelper.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Management;
 using System.Security;
@@ -28,8 +30,7 @@ namespace Mtf.WmiHelper
 
         public static uint StartApplication(string processPath, string computerName = Localhost, string username = null, SecureString securePassword = null, string authority = "ntlmdomain:DOMAIN", string @namespace = DefaultNamespace)
         {
-            var managementScope = $"\\\\{computerName ?? Localhost}\\{Root}\\{@namespace}";
-            var scope = new ManagementScope(managementScope);
+            var scope = GetManagementScope(computerName, @namespace);
 
             if (!LocalDeviceIdentifier.IsLocalMachine(computerName))
             {
@@ -77,10 +78,7 @@ namespace Mtf.WmiHelper
                 Authentication = AuthenticationLevel.PacketPrivacy,
                 Impersonation = ImpersonationLevel.Impersonate
             };
-
-            var scopePath = $"\\\\{computerName?.Replace("\\\\", "") ?? Localhost}\\{Root}\\{@namespace}";
-            ManagementScope scope = new ManagementScope(scopePath, options);
-
+            var scope = GetManagementScope(computerName, @namespace, options);
             scope.Connect();
 
             var query = new ObjectQuery("SELECT HotFixID FROM Win32_QuickFixEngineering");
@@ -96,6 +94,19 @@ namespace Mtf.WmiHelper
             }
 
             return new ReadOnlyCollection<string>(result);
+        }
+
+        private static ManagementScope GetManagementScope(string computerName, string @namespace, ConnectionOptions options = null)
+        {
+            var scopePath = GetScopePath(computerName, @namespace);
+            return options == null ? new ManagementScope(scopePath) : new ManagementScope(scopePath, options);
+        }
+
+        private static string GetScopePath(string computerName, string @namespace)
+        {
+            return (computerName?.StartsWith("\\\\", StringComparison.Ordinal) ?? false) ?
+                $"{computerName}\\{Root}\\{@namespace}" :
+                $"\\\\{computerName ?? Localhost}\\{Root}\\{@namespace}";
         }
 
         public static WmiReaderResult GetObjects(string queryString, string @namespace = DefaultNamespace)
@@ -122,8 +133,7 @@ namespace Mtf.WmiHelper
             ImpersonationLevel impersonationLevel = 0, AuthenticationLevel authenticationLevel = 0, bool enablePrivileges = false,
             string username = null, SecureString securePassword = null, string password = null, string authority = null, ManagementNamedValueCollection context = null)
         {
-            var managementScope = $"\\\\{computerName ?? Localhost}\\{Root}\\{@namespace}";
-            var scope = new ManagementScope(managementScope);
+            var scope = GetManagementScope(computerName, @namespace);
 
             if (!LocalDeviceIdentifier.IsLocalMachine(computerName))
             {
@@ -163,7 +173,7 @@ namespace Mtf.WmiHelper
 
         public static string GetCommaSeparatedColumnNames(string query)
         {
-            if (string.IsNullOrWhiteSpace(query) || !query.StartsWith("SELECT ", StringComparison.OrdinalIgnoreCase))
+            if (String.IsNullOrWhiteSpace(query) || !query.StartsWith("SELECT ", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException($"Not supported query: {query}", nameof(query));
             }
@@ -180,6 +190,127 @@ namespace Mtf.WmiHelper
                 .Select(name => name.Trim());
 
             return String.Join(",", columnNames);
+        }
+
+        public static object ReadRegistry(string ipAddress, string username, string password, RegistryHive registryHive, string key, string value, RegistryValueKind kind)
+        {
+            using (var regKey = GetRegistryKey(registryHive, key))
+            {
+                var raw = regKey.GetValue(value);
+                if (raw == null)
+                {
+                    return null;
+                }
+
+                switch (kind)
+                {
+                    case RegistryValueKind.DWord:
+                    case RegistryValueKind.QWord:
+                        return Convert.ToUInt32(raw);
+                    case RegistryValueKind.String:
+                    case RegistryValueKind.ExpandString:
+                    case RegistryValueKind.MultiString:
+                        return Convert.ToString(raw);
+                    case RegistryValueKind.Binary:
+                    case RegistryValueKind.Unknown:
+                        return raw;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+        }
+
+        public static object ReadRemoteRegistry(string ipAddress, string username, string password, RegistryHive registryHive, string key, string value, RegistryValueKind kind = RegistryValueKind.String)
+        {
+            var options = new ConnectionOptions
+            {
+                Username = username,
+                Password = password
+            };
+
+            var scope = GetManagementScope(ipAddress, "default", options);
+            if (!scope.IsConnected)
+            {
+                scope.Connect();
+            }
+
+            var registry = new ManagementClass(scope, new ManagementPath("StdRegProv"), null);
+
+            string methodName, resultKey;
+            switch (kind)
+            {
+                case RegistryValueKind.DWord:
+                case RegistryValueKind.QWord:
+                case RegistryValueKind.Binary:
+                    methodName = kind == RegistryValueKind.DWord ? "GetDWORDValue" :
+                                    kind == RegistryValueKind.QWord ? "GetQWORDValue" : "GetBinaryValue";
+                    resultKey = "uValue";
+                    break;
+                case RegistryValueKind.String:
+                case RegistryValueKind.ExpandString:
+                case RegistryValueKind.MultiString:
+                    methodName = kind == RegistryValueKind.String ? "GetStringValue" :
+                                    kind == RegistryValueKind.ExpandString ? "GetExpandedStringValue" : "GetMultiStringValue";
+                    resultKey = "sValue";
+                    break;
+                case RegistryValueKind.Unknown:
+                    methodName = "GetBinaryValue";
+                    resultKey = "uValue";
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            var inParams = registry.GetMethodParameters(methodName);
+            inParams["hDefKey"] = registryHive;
+            inParams["sSubKeyName"] = key;
+            inParams["sValueName"] = value;
+
+            var outParams = registry.InvokeMethod(methodName, inParams, null);
+            uint result = Convert.ToUInt32(outParams["ReturnValue"]);
+
+            if (result != 0)
+            {
+                throw new Win32Exception((int)result);
+            }
+
+            return outParams[resultKey];
+        }
+
+        public static RegistryKey GetRegistryKey(RegistryHive registryHive, string name, bool writable = false)
+        {
+            RegistryKey key;
+
+            switch (registryHive)
+            {
+                case RegistryHive.ClassesRoot:
+                    key = Registry.ClassesRoot;
+                    break;
+                case RegistryHive.CurrentConfig:
+                    key = Registry.CurrentConfig;
+                    break;
+                case RegistryHive.CurrentUser:
+                    key = Registry.CurrentUser;
+                    break;
+                case RegistryHive.LocalMachine:
+                    key = Registry.LocalMachine;
+                    break;
+                case RegistryHive.PerformanceData:
+                    key = Registry.PerformanceData;
+                    break;
+                case RegistryHive.Users:
+                    key = Registry.Users;
+                    break;
+#if NETFRAMEWORK
+                case RegistryHive.DynData:
+                    key = Registry.DynData;
+                    break;
+#endif
+                default:
+                    throw new NotSupportedException();
+            }
+
+            return key.OpenSubKey(name, writable);
         }
     }
 }
