@@ -262,7 +262,7 @@ namespace Mtf.WmiHelper
             }
 
             var inParams = registry.GetMethodParameters(methodName);
-            inParams["hDefKey"] = registryHive;
+            inParams["hDefKey"] = unchecked((uint)registryHive);
             inParams["sSubKeyName"] = key;
             inParams["sValueName"] = value;
 
