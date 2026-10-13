@@ -74,7 +74,11 @@ static string GetPasswordHash(System.Security.Cryptography.MD5 md5, string input
 }
 static IEnumerable<string> GenerateCombinations(string charset, int maxLength)
 {
-    return GenerateCombinationsRecursive(charset, "", maxLength);
+    yield return "";
+    foreach (var combo in GenerateCombinationsRecursive(charset, "", maxLength))
+    {
+        yield return combo;
+    }
 }
 
 static IEnumerable<string> GenerateCombinationsRecursive(string charset, string prefix, int maxLength)
