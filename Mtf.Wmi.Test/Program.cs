@@ -41,7 +41,7 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
             var candidate = user.Username + separator + user.Username;
             var hash = GetPasswordHash(candidate);
 
-            if (hash != user.PasswordHash)
+            if (hash != expected)
             {
                 Console.WriteLine($"no match: {candidate}");
             }
