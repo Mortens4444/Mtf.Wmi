@@ -58,7 +58,7 @@ static string GetPasswordHash(string input)
 {
     using (var md5 = System.Security.Cryptography.MD5.Create())
     {
-        var bytes = System.Text.Encoding.ASCII.GetBytes(input);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
         var hash = md5.ComputeHash(bytes);
         return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
     }
