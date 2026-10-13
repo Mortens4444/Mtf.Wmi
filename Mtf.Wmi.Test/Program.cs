@@ -1,8 +1,6 @@
 ﻿using Microsoft.Win32;
-using Mtf.Extensions.Services;
 using Mtf.Wmi.Test;
 using Mtf.WmiHelper;
-using System.Runtime.InteropServices;
 
 const string VideoServerUsersRegistryPath = "SOFTWARE\\Graffiti\\Video Server\\Users";
 
