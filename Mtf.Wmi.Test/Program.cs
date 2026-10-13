@@ -25,14 +25,28 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
     var result = new List<VideoServerUser>();
     for (var i = 0; i < usersCount; i++)
     {
-        var user = new VideoServerUser
+        VideoServerUser user;
+        try
         {
-            Id = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}"),
-            FullName = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}"),
-            Username = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}"),
-            PasswordHash = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}")
-        };
+            user = new VideoServerUser
+            {
+                Id = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}"),
+                FullName = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}"),
+                Username = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}"),
+                PasswordHash = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}")
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Skipping user {i}: {ex.Message}");
+            continue;
+        }
         result.Add(user);
+
+        if (user.PasswordHash == null)
+        {
+            continue;
+        }
 
         var charset = "<> :_-|\\/*.,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÁÉŐÚÁŰÖÜÓÍáéűőúóüöí0123456789'\"+!%=()[]äđĐÄ€ł´Ł˝¨¨¸÷ß×¤*;}{@&#"; //
         var expected = user.PasswordHash.ToUpperInvariant();
