@@ -20,7 +20,7 @@ Console.WriteLine($"Process started with id: {processId}");
 
 static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, string osUsername, string osPassword)
 {
-    var usersCount = (uint)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, "NumUsers", RegistryValueKind.DWord);
+    var usersCount = Convert.ToUInt32(Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, "NumUsers", RegistryValueKind.DWord));
 
     var result = new List<VideoServerUser>();
     for (var i = 0; i < usersCount; i++)
