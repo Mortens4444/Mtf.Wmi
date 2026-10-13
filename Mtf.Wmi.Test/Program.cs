@@ -50,10 +50,11 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
 
         var charset = "<> :_-|\\/*.,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÁÉŐÚÁŰÖÜÓÍáéűőúóüöí0123456789'\"+!%=()[]äđĐÄ€ł´Ł˝¨¨¸÷ß×¤*;}{@&#"; //
         var expected = user.PasswordHash.ToUpperInvariant();
+        using var md5 = System.Security.Cryptography.MD5.Create();
         foreach (var separator in GenerateCombinations(charset, 4))
         {
             var candidate = user.Username + separator + user.Username;
-            var hash = GetPasswordHash(candidate);
+            var hash = GetPasswordHash(md5, candidate);
 
             if (hash == expected)
             {
@@ -65,14 +66,11 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
     return result;
 }
 
-static string GetPasswordHash(string input)
+static string GetPasswordHash(System.Security.Cryptography.MD5 md5, string input)
 {
-    using (var md5 = System.Security.Cryptography.MD5.Create())
-    {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hash = md5.ComputeHash(bytes);
-        return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-    }
+    var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+    var hash = md5.ComputeHash(bytes);
+    return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
 }
 static IEnumerable<string> GenerateCombinations(string charset, int maxLength)
 {
