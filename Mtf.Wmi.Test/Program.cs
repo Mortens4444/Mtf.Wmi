@@ -55,13 +55,10 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
             var candidate = user.Username + separator + user.Username;
             var hash = GetPasswordHash(candidate);
 
-            if (hash != expected)
-            {
-                Console.WriteLine($"no match: {candidate}");
-            }
-            else
+            if (hash == expected)
             {
                 Console.WriteLine($"Found: {candidate}");
+                break;
             }
         }
     }
