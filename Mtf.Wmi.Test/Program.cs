@@ -6,7 +6,8 @@ using System.Runtime.InteropServices;
 
 const string VideoServerUsersRegistryPath = "SOFTWARE\\Graffiti\\Video Server\\Users";
 
-GetVideoServerUsersFromRegistry("192.168.0.60", "Sziltech", "sziltech");
+var videoServerUsers = GetVideoServerUsersFromRegistry("192.168.0.60", "Sziltech", "sziltech");
+RecoverPasswords(videoServerUsers);
 
 var hotfixIDs = Wmi.GetHotfixIDs("192.168.0.246", "user", "pass");
 int num = 1;
@@ -25,24 +26,28 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
     var result = new List<VideoServerUser>();
     for (var i = 0; i < usersCount; i++)
     {
-        VideoServerUser user;
         try
         {
-            user = new VideoServerUser
+            result.Add(new VideoServerUser
             {
                 Id = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}"),
                 FullName = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}"),
                 Username = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}"),
                 PasswordHash = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}")
-            };
+            });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Skipping user {i}: {ex.Message}");
-            continue;
         }
-        result.Add(user);
+    }
+    return result;
+}
 
+static void RecoverPasswords(IEnumerable<VideoServerUser> users)
+{
+    foreach (var user in users)
+    {
         if (user.PasswordHash == null)
         {
             continue;
@@ -63,7 +68,6 @@ static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, s
             }
         }
     }
-    return result;
 }
 
 static string GetPasswordHash(System.Security.Cryptography.MD5 md5, string input)
