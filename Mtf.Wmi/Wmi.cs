@@ -192,7 +192,7 @@ namespace Mtf.WmiHelper
             return String.Join(",", columnNames);
         }
 
-        public static object ReadRegistry(string ipAddress, string username, string password, RegistryHive registryHive, string key, string value, RegistryValueKind kind)
+        public static object ReadRegistry(RegistryHive registryHive, string key, string value, RegistryValueKind kind)
         {
             using (var regKey = GetRegistryKey(registryHive, key))
             {
@@ -301,13 +301,8 @@ namespace Mtf.WmiHelper
                 case RegistryHive.Users:
                     key = Registry.Users;
                     break;
-#if NETFRAMEWORK
-                case RegistryHive.DynData:
-                    key = Registry.DynData;
-                    break;
-#endif
                 default:
-                    throw new NotSupportedException();
+                    throw new NotSupportedException($"Registry hive {registryHive} is not supported.");
             }
 
             return key.OpenSubKey(name, writable);

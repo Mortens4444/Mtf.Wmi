@@ -2,7 +2,8 @@
 using Mtf.Wmi.Test;
 using Mtf.WmiHelper;
 
-const string VideoServerUsersRegistryPath = "SOFTWARE\\Graffiti\\Video Server\\Users";
+const bool localRegistry = true;
+const string VideoServerUsersRegistryPath = localRegistry ? "SOFTWARE\\WOW6432Node\\Graffiti\\Video Server\\Users" : "SOFTWARE\\Graffiti\\Video Server\\Users";
 
 var videoServerUsers = GetVideoServerUsersFromRegistry("192.168.0.60", "Sziltech", "sziltech");
 RecoverPasswords(videoServerUsers);
@@ -19,20 +20,33 @@ Console.WriteLine($"Process started with id: {processId}");
 
 static List<VideoServerUser> GetVideoServerUsersFromRegistry(string ipAddress, string osUsername, string osPassword)
 {
-    var usersCount = Convert.ToUInt32(Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, "NumUsers", RegistryValueKind.DWord));
+    
+    var usersCount = localRegistry ?
+        Convert.ToUInt32(Wmi.ReadRegistry(RegistryHive.LocalMachine, VideoServerUsersRegistryPath, "NumUsers", RegistryValueKind.DWord)) :
+        Convert.ToUInt32(Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, "NumUsers", RegistryValueKind.DWord));
 
     var result = new List<VideoServerUser>();
     for (var i = 0; i < usersCount; i++)
     {
         try
         {
-            result.Add(new VideoServerUser
-            {
-                Id = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}"),
-                FullName = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}"),
-                Username = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}"),
-                PasswordHash = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}")
-            });
+            var videoServer = localRegistry ?
+                new VideoServerUser
+                {
+                    Id = (string)Wmi.ReadRegistry(RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}", RegistryValueKind.String),
+                    FullName = (string)Wmi.ReadRegistry(RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}", RegistryValueKind.String),
+                    Username = (string)Wmi.ReadRegistry(RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}", RegistryValueKind.String),
+                    PasswordHash = (string)Wmi.ReadRegistry(RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}", RegistryValueKind.String)
+                } :
+                new VideoServerUser
+                {
+                    Id = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"ID-{i}"),
+                    FullName = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Full Name-{i}"),
+                    Username = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Login Name-{i}"),
+                    PasswordHash = (string)Wmi.ReadRemoteRegistry(ipAddress, osUsername, osPassword, RegistryHive.LocalMachine, VideoServerUsersRegistryPath, $"Password-{i}")
+                };
+
+            result.Add(videoServer);
         }
         catch (Exception ex)
         {
@@ -50,20 +64,24 @@ static void RecoverPasswords(IEnumerable<VideoServerUser> users)
         {
             continue;
         }
+        RecoverPassword(user);
+    }
+}
 
-        var charset = "<> :_-|\\/*.,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÁÉŐÚÁŰÖÜÓÍáéűőúóüöí0123456789'\"+!%=()[]äđĐÄ€ł´Ł˝¨¨¸÷ß×¤*;}{@&#"; //
-        var expected = user.PasswordHash.ToUpperInvariant();
-        using var md5 = System.Security.Cryptography.MD5.Create();
-        foreach (var separator in GenerateCombinations(charset, 4))
+static void RecoverPassword(VideoServerUser user)
+{
+    var charset = "<> :_-|\\/*.,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÁÉŐÚÁŰÖÜÓÍáéűőúóüöí0123456789'\"+!%=()[]äđĐÄ€ł´Ł˝¨¨¸÷ß×¤*;}{@&#"; //
+    var expected = user.PasswordHash.ToUpperInvariant();
+    using var md5 = System.Security.Cryptography.MD5.Create();
+    foreach (var separator in GenerateCombinations(charset, 4))
+    {
+        var candidate = user.Username + separator + user.Username;
+        var hash = GetPasswordHash(md5, candidate);
+
+        if (hash == expected)
         {
-            var candidate = user.Username + separator + user.Username;
-            var hash = GetPasswordHash(md5, candidate);
-
-            if (hash == expected)
-            {
-                Console.WriteLine($"Found: {candidate}");
-                break;
-            }
+            Console.WriteLine($"Found: {candidate}");
+            break;
         }
     }
 }
@@ -76,7 +94,7 @@ static string GetPasswordHash(System.Security.Cryptography.MD5 md5, string input
 }
 static IEnumerable<string> GenerateCombinations(string charset, int maxLength)
 {
-    yield return "";
+    yield return String.Empty;
     foreach (var combo in GenerateCombinationsRecursive(charset, "", maxLength))
     {
         yield return combo;
@@ -86,10 +104,14 @@ static IEnumerable<string> GenerateCombinations(string charset, int maxLength)
 static IEnumerable<string> GenerateCombinationsRecursive(string charset, string prefix, int maxLength)
 {
     if (prefix.Length > 0)
+    {
         yield return prefix;
+    }
 
     if (prefix.Length >= maxLength)
+    {
         yield break;
+    }
 
     foreach (var c in charset)
     {
