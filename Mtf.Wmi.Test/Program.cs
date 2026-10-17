@@ -3,10 +3,12 @@ using Mtf.Wmi.Test;
 using Mtf.WmiHelper;
 
 const bool localRegistry = true;
+const int maxSeparatorLength = 8;
 const string VideoServerUsersRegistryPath = localRegistry ? "SOFTWARE\\WOW6432Node\\Graffiti\\Video Server\\Users" : "SOFTWARE\\Graffiti\\Video Server\\Users";
 
-var videoServerUsers = GetVideoServerUsersFromRegistry("192.168.0.60", "Sziltech", "sziltech");
-RecoverPasswords(videoServerUsers);
+var videoServerUsers = localRegistry ? GetVideoServerUsersFromRegistry("192.168.50.134", "", "") : GetVideoServerUsersFromRegistry("192.168.0.60", "Sziltech", "sziltech");
+RecoverPassword(videoServerUsers.Last());
+//RecoverPasswords(videoServerUsers);
 
 var hotfixIDs = Wmi.GetHotfixIDs("192.168.0.246", "user", "pass");
 int num = 1;
@@ -73,7 +75,7 @@ static void RecoverPassword(VideoServerUser user)
     var charset = "<> :_-|\\/*.,abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÁÉŐÚÁŰÖÜÓÍáéűőúóüöí0123456789'\"+!%=()[]äđĐÄ€ł´Ł˝¨¨¸÷ß×¤*;}{@&#"; //
     var expected = user.PasswordHash.ToUpperInvariant();
     using var md5 = System.Security.Cryptography.MD5.Create();
-    foreach (var separator in GenerateCombinations(charset, 4))
+    foreach (var separator in GenerateCombinations(charset, maxSeparatorLength))
     {
         var candidate = user.Username + separator + user.Username;
         var hash = GetPasswordHash(md5, candidate);
@@ -90,12 +92,13 @@ static string GetPasswordHash(System.Security.Cryptography.MD5 md5, string input
 {
     var bytes = System.Text.Encoding.UTF8.GetBytes(input);
     var hash = md5.ComputeHash(bytes);
-    return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
+    return BitConverter.ToString(hash).Replace("-", String.Empty).ToUpperInvariant();
 }
+
 static IEnumerable<string> GenerateCombinations(string charset, int maxLength)
 {
     yield return String.Empty;
-    foreach (var combo in GenerateCombinationsRecursive(charset, "", maxLength))
+    foreach (var combo in GenerateCombinationsRecursive(charset, String.Empty, maxLength))
     {
         yield return combo;
     }
